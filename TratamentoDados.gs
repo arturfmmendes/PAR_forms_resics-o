@@ -6,30 +6,38 @@ function atribuirValores(dadosADMP, respostas){
   Logger.log("Montando Objeto do Profissional")
 
   //dados do admp
-  const matricula = trataMatricula(dadosADMP[0].toString()) 
-  const nome = dadosADMP[1]
-  const cpf = trataCPF(dadosADMP[2].toString()) 
-  const categoria = dadosADMP[3].toString()
-  const especialidade = dadosADMP[4].toString()
-  const lotacao1 = dadosADMP[5].toString()
-  const dataAdmissao =  dadosADMP[6] 
-  const conselho = arrumarConselho(dadosADMP[7].toString().toUpperCase()) 
-  const numRegistro = dadosADMP[8]
-  const ufConselho = dadosADMP[9].toString()
-  const regional1 = dadosADMP[10].toString()
+  const matricula = dadosADMP[3].toString()
+  const cpf = dadosADMP[1].toString()
+  const nome = dadosADMP[5]
+  const categoria = dadosADMP[7].toString()
+  const especialidade = dadosADMP[8].toString()
+  const numRegistro = dadosADMP[12]
+  const conselho = arrumarConselho(dadosADMP[11].toString().toUpperCase()) 
+  const ufConselho = dadosADMP[13].toString()
+  const dataAdmissao =  dadosADMP[10]
+  const lotacao1 = dadosADMP[9].toString()
+  const regional1 = dadosADMP[14].toString()
+
 
 
   //dados da resposta do formulario
-  const ultimoDia = respostas['DATA DO ÚLTIMO DIA TRABALHADO'].toString()
+  let ultimoDia = respostas['DATA DO ÚLTIMO DIA TRABALHADO'].map(data => {
+    if(data !== ""){
+      return data
+    }
+  })
+  const inicioAviso = respostas['DATA DO INÍCIO DO AVISO PRÉVIO'].toString()
+  const comunicacaoAviso = respostas["DATA DA COMUNICAÇÃO DO DIREITO AO AVISO PRÉVIO"].toString()
   const confirmaBV = respostas['DECLARAÇÃO DE BENS E VALORES DE DESLIGAMENTO (DBV)'].toString()
   const reciboBV = respostas['INSIRA O CÓDIGO DO RECIBO DA DBV'].toString()
   const iniciativaRecisao = respostas['INICIATIVA DA RESCISÃO'].toString()
-  const emailGestor = respostas['E-MAIL DO GESTOR'].toString()
-  var emailProfissional = respostas['E-MAIL DO PROFISSIONAL'][0].toString()
+  const avisoPrevio = respostas['O PROFISSIONAL CUMPRIRÁ AVISO PRÉVIO?'].toString()
+  const emailGestor = respostas['E-MAIL DO GESTOR'][0].toString() || respostas['E-MAIL DO GESTOR'][1].toString()
+  const emailProfissional = respostas['E-MAIL DO PROFISSIONAL'][0].toString() || respostas['E-MAIL DO PROFISSIONAL'][1].toString()
 
-  if(emailProfissional === ""){
+  /*if(emailProfissional === ""){
     emailProfissional = respostas['E-MAIL DO PROFISSIONAL'][1].toString()
-  }
+  }*/
 
   //unificando dados
   const Dados = {
@@ -48,11 +56,14 @@ function atribuirValores(dadosADMP, respostas){
     confirmaBV, 
     reciboBV, 
     iniciativaRecisao, 
+    avisoPrevio,
+    inicioAviso,
+    comunicacaoAviso,
     emailGestor, 
     emailProfissional
   }
   
-  Logger.log("Objeto profissional montado:")
+  Logger.log("DadosProfissional:")
   Logger.log(JSON.stringify(Dados))
   return Dados
 }
@@ -61,9 +72,9 @@ function formataData(Data){
 
   //Exemplo da url com a data: https://docs.google.com/forms/d/e/1FAIpQLScO2xjj7IASByJvVy2hh7gepFpE8FV_eAjr2RsUiL_QmTguDw/viewform?usp=pp_url&entry.354468775=1234567&entry.1490292666=2022-08-10
 
-  const dataArr = Data.split('/')
-  const data = new Date(dataArr[2],dataArr[1] - 1,dataArr[0])
-  const dataFinal = Utilities.formatDate(data,"GMT -0300", "yyyy-MM-dd")
+  /*const dataArr = Data.split('/')
+  const data = new Date(dataArr[2],dataArr[1] - 1,dataArr[0])*/
+  const dataFinal = Utilities.formatDate(Data,"GMT -0300", "yyyy-MM-dd")
    
   return dataFinal
 }
@@ -91,36 +102,6 @@ function primeiraMaiuscula(string){
 
 function escolheEmail(arrayEmails){
   
-}
-
-function trataMatricula(matr){
-
-  if(matr.length < 7){
-
-    var matrCom0 = matr
-
-    for (let i = 0; i < 7 - matr.length; i++){
-      
-      matrCom0 = "0" + matrCom0
-    }
-    return matrCom0
-  }
-  return matr
-}
-
-function trataCPF(CPF){
-  
-  if(CPF.length < 11){
-
-    var CPFCom0 = CPF
-
-    for (let i = 0; i < 11 - CPF.length; i++){
-      
-      CPFCom0 = "0" + CPFCom0
-    }
-    return CPFCom0
-  }
-  return CPF
 }
 
 function arrumarConselho(conselho){

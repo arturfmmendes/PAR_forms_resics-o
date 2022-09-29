@@ -1,79 +1,76 @@
-function getParentFolderByName_(folderName) {
-
-  // Gets the Drive Folder of where the current spreadsheet is located.
-  const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
-  const parentFolder = DriveApp.getFileById(ssId).getParents().next();
-
-  // Iterates the subfolders to check if the PDF folder already exists.
-  const subFolders = parentFolder.getFolders();
-  while (subFolders.hasNext()) {
-    let folder = subFolders.next();
-
-    // Returns the existing folder if found.
-    if (folder.getName() === folderName) {
-      return folder;
-    }
-  }
-  // Creates a new folder if one does not already exist.
-  return parentFolder.createFolder(folderName)
-    .setDescription(`Created by Eu mesmo: application to store PDF output files`);
-}
+//VARIÁVEIS GLOBAIS ------------------------------------------------------------------------
 
 const plan_atual = SpreadsheetApp.getActiveSpreadsheet()
 const aba_admp = plan_atual.getSheetByName('ADMP')
-const FORMULARIO = plan_atual.getSheetByName('formRecisao')
+var FORMULARIO
 const folder = getParentFolderByName_('pdfs')
+const respostasUnidade = getParentFolderByName_('Respostas por unidade')
 const ssId = plan_atual.getId()
+var image = DriveApp.getFileById("1kOoCMcm57rZMwa71OgyeOalZpSddirrs").getAs("image/png");
+var emailImages = {"logo": image};
 
 //PLANILHA MANUTENÇÃO ------------------------------------------------------------------------
 
 const SHEET_MANUTENÇÃO = SpreadsheetApp.openById("1muBwSOryC27MtuRXkhpxSOdnFPz46uIeMdQcGrr8O4w").getSheetByName("Respostas form. resc.")
-
-//PLANILHA DAS REGIONAIS ------------------------------------------------------------------------
-
-const SHEETS_NORTE = SpreadsheetApp.openById("1DfASkX32WMqTINpwVqQB1tI7TIGqIrZoqEOV0SmOvp0").getSheetByName("Monitoramento de Rescisões - NORTE")
-const SHEETS_NORDESTE = SpreadsheetApp.openById("1tjXAJFEpHfVPcI5hKXzaMy78N0Qyf_hyDGCGt0eugGw").getSheetByName("Monitoramento de Rescisões - NORDESTE")
-const SHEETS_NOROESTE = SpreadsheetApp.openById("14JHOzFLD2TgboahG6UWq_NUQwTBSKRL8ciu9Ui8TNkc").getSheetByName("Monitoramento de Rescisões - NOROESTE")
-const SHEETS_OESTE = SpreadsheetApp.openById("1tdwi7eeduxzS5nD1m1QEKAVZMFKDJdVW5vbr1KASU84").getSheetByName("Monitoramento de Rescisões - OESTE")
-const SHEETS_CENTRO_SUL = SpreadsheetApp.openById("1gErtvhoWUWRB_NpzMb1OUEQPmFYn5lNmHaNDYaGpMYI").getSheetByName("Monitoramento de Rescisões - CENTRO SUL")
-const SHEETS_LESTE = SpreadsheetApp.openById("1xJu7v6PNE1TPd-8yo4PnwGR2ClGmVnyi9AfTYjLTInA").getSheetByName("Monitoramento de Rescisões - LESTE")
-const SHEETS_NIVEL_CENTRAL = SpreadsheetApp.openById("12NX5qxba9wKXmFt5Cng7kSSmoRghOUgRF5nQEj-4t4k").getSheetByName("Monitoramento de Rescisões - NÍVEL CENTRAL")
-const SHEETS_BARREIRO = SpreadsheetApp.openById("1DagPF0PbCE7Ed1F6A60yV4pfMuig2faqRwY-2Azry8g").getSheetByName("Monitoramento de Rescisões - BARREIRO")
-const SHEETS_VENDA_NOVA = SpreadsheetApp.openById("19E00acq7fGLTHAUs9_vVwvgeTZVvxKnISzorYzjbvv8").getSheetByName("Monitoramento de Rescisões - VENDA NOVA")
-const SHEETS_PAMPULHA = SpreadsheetApp.openById("1WogRODhxMkn_2KP-bVD0Q3d4_YjfHYWcJZEu0yqtN1Q").getSheetByName("Monitoramento de Rescisões - PAMPULHA")
 
 //----------------------------------------------------------------------------------------------------
 
 //Link preenchido para testes para email Artur
 //https://docs.google.com/forms/d/e/1FAIpQLSdj3wmwOP_le-fIQy_4xoTS90bYSBhAqP3rkj_7CH_XX84WjQ/viewform?usp=pp_url&entry.1425630199=arturfmmendes@gmail.com&entry.1308478672=Por+interesse+da+SMSA&entry.1929694843=N%C3%A3o+atende+%C3%A0s+expectativas+do+servi%C3%A7o&entry.1344356617=0134604&entry.1258792198=08022811688&entry.1817285980=111111&entry.1386471171=2022-08-04&entry.322925036=CIENTE
 //OK
+
 function onFormSubmit(e) {
 
   const RespostasForms = e.namedValues
+  console.log(JSON.stringify(RespostasForms))
   
   //Pega os dados do ADMP da matricula e confere se o CPF bate
   const DadosADMP = capturaDados(RespostasForms)
 
+  console.log("DadosADMP")
+  console.log(JSON.stringify(DadosADMP))
+
   //se o CPF não bater
   if(DadosADMP.erro === 1){
-    enviarEmaildeErro(DadosADMP)
-    Logger.log("CPF e BM não são correspondentes: Email de erro enviado ao destinatário " + DadosADMP.email)
+    const msg = ""
+    const codErr = "erro1"
+    enviarEmaildeErro(DadosADMP, DadosADMP.emailGestor,msg, codErr)
+    Logger.log("CPF e BM não são correspondentes: Email de erro enviado ao destinatário " + DadosADMP.emailGestor)
     return 1
   }
 
   //se o e-mail do gestor e do profissional forem iguais
   if(DadosADMP.erro === 2){
-    enviarEmaildeErroEmail(DadosADMP)
+    const msg = ""
+    const codErr = "erro2"
+    enviarEmaildeErro(DadosADMP, DadosADMP.emailGestor,msg, codErr)
     Logger.log("E-mail não enviado: e-mail do gestor e do profissional são iguais")
-    return 1
+    return 2
   }
-  
+
   //atribui os valores de todos os dados necessarios a um objeto
   const DadosProfissional = atribuirValores(DadosADMP, RespostasForms)
 
+  const dataLei = new Date(2022,6,1)
+
+  //se a contratação do profissional ocorreu a partir de 01/07/2022 e mas foi marcado que iria cumprir aviso prévio
+  if(DadosProfissional.dataAdmissao >= dataLei && DadosProfissional.avisoPrevio === "Sim."){
+    const msg = "a contratação do profissional ocorreu a partir de 01/07/2022, portanto ele não tem direito à aviso prévio, porém, no preenchimento do formulário foi indicado o cumprimento do aviso. Gentileza submeter novo formulário com os dados corretos." 
+    const codErr = "erro3"
+    DadosADMP.emailGestor = RespostasForms['E-MAIL DO GESTOR'].toString()
+    enviarEmaildeErro(DadosADMP, DadosProfissional.emailGestor,msg, codErr)
+    Logger.log("não tem direito a aviso prévio")
+    return codErr
+  }
+
+  if(DadosProfissional.dataAdmissao >= dataLei ){
+    FORMULARIO = plan_atual.getSheetByName('formRecisao')
+  }else{
+    FORMULARIO = plan_atual.getSheetByName('formRecisao-Aviso')
+  }
 
   //distribui os dados do objeto pelo termo de rescisao
-  preencherPlanilha(DadosProfissional)
+  const ultDia = preencherPlanilha(DadosProfissional,FORMULARIO)
 
   //gera o pdf
   const PDF = gerarPDF(DadosProfissional.nome)
@@ -87,7 +84,7 @@ function onFormSubmit(e) {
       emailProfissional: DadosProfissional.emailProfissional,
       nome: DadosProfissional.nome.toString(),
       matricula: DadosProfissional.matricula.toString(),
-      ultDia: DadosProfissional.ultimoDia.toString(),
+      ultDia, //vindo do preenchimento do formulário na planilha
       interesse: DadosProfissional.iniciativaRecisao.toString(),
       cienciaProfissional: RespostasForms["Declaro que já comuniquei ao profissional quanto a rescisão de seu contrato."].toString(),
       pdf: PDF
@@ -96,14 +93,12 @@ function onFormSubmit(e) {
 
   folder.getFilesByName(PDF.getName()).next().setTrashed(true)
 
-  envioManutencao(DadosProfissional, RespostasForms)
+  envioManutencao(DadosProfissional,ultDia, RespostasForms)
   
-  envioUnidades(DadosProfissional, RespostasForms)
+  envioUnidades(DadosProfissional, ultDia, RespostasForms)
 
-  
 }
 
-//OK
 function capturaDados(FormRespostas){
   
   Logger.log("Resposta recebida")
@@ -111,37 +106,34 @@ function capturaDados(FormRespostas){
 
   const matriculaEnviada = FormRespostas['MATRÍCULA DO PROFISSIONAL']
   const cpfEnviado = FormRespostas['CPF DO PROFISSIONAL'].toString()
-  const emailGestor = FormRespostas['E-MAIL DO GESTOR'].toString()
-  var emailProfissional = FormRespostas['E-MAIL DO PROFISSIONAL'][0].toString()
-
-  if(emailProfissional === ""){
-    emailProfissional = FormRespostas['E-MAIL DO PROFISSIONAL'][1].toString()
-  }
+  const emailGestor = FormRespostas['E-MAIL DO GESTOR'][0].toString() || FormRespostas['E-MAIL DO GESTOR'][1].toString()
+  const emailProfissional = FormRespostas['E-MAIL DO PROFISSIONAL'][0].toString() || FormRespostas['E-MAIL DO PROFISSIONAL'][1].toString()
   
   //linha dos dados do profissional no ADMP
   const matrizADMP = aba_admp.getDataRange().getValues()
   const profissionalADMP = matrizADMP.filter(
     data => {
-    if(data[0] == matriculaEnviada){
+    if(data[3] == matriculaEnviada){
       return data
     }
   })[0]
 
-  if (profissionalADMP[2] != cpfEnviado){
-    return { erro: 1, emailGestor, matrEnviada: matriculaEnviada, cpfEnv: cpfEnviado}
+  if (profissionalADMP[1] != cpfEnviado){
+    return { erro: 1, emailGestor, matriculaEnviada, cpfEnviado}
   }
 
   //passando os 2 para LowerCase para não aceitar o mesmo email maiúsculo e minusculo
   if(emailGestor.toLowerCase() === emailProfissional.toLowerCase()){
-    return { erro: 2, emailGestor, matrEnviada: matriculaEnviada, cpfEnv: cpfEnviado}
+    return { erro: 2, emailGestor, matriculaEnviada, cpfEnviado}
   }
   
   return profissionalADMP
   
 }
 
-//OK
-function preencherPlanilha(DadosProf){
+function preencherPlanilha(DadosProf,FORMULARIO){
+
+  const aba = FORMULARIO.getName()
 
   Logger.log("Dados recebidos para preenchiento do termo")
   //Logger.log(JSON.stringify(DadosProf))
@@ -159,16 +151,23 @@ function preencherPlanilha(DadosProf){
     }
 
     switch(nome){
-      case 'form_nome':
+      case 'form_diaAviso':
+        if(DadosProf.inicioAviso !== ""){
+          namedRange.getRange().setValue(DadosProf.inicioAviso)
+        }else{
+          namedRange.getRange().setValue(DadosProf.comunicacaoAviso)
+        }
+        break;
+      case `form_nome`:
         namedRange.getRange().setValue(DadosProf.nome)
         break;
-      case 'form_cpf':
+      case `form_cpf`:
         namedRange.getRange().setValue(DadosProf.cpf)
         break;
-      case 'form_matricula':
+      case `form_matricula`:
         namedRange.getRange().setValue(DadosProf.matricula)
         break;
-      case 'form_categoria':
+      case `form_categoria`:
         if (DadosProf.especialidade === "" || DadosProf.especialidade === "MEDICO") {
         
           namedRange.getRange().setValue(DadosProf.categoria)
@@ -178,7 +177,7 @@ function preencherPlanilha(DadosProf){
           namedRange.getRange().setValue(DadosProf.categoria + " / " + DadosProf.especialidade)
         }
         break;
-      case 'form_nRegistro':
+      case `form_nRegistro`:
         if(DadosProf.numRegistro === ""){
           
           namedRange.getRange().setValue("NÃO SE APLICA")
@@ -187,7 +186,7 @@ function preencherPlanilha(DadosProf){
           namedRange.getRange().setValue(DadosProf.numRegistro)
         }
         break;
-      case 'form_conselho':
+      case `form_conselho`:
         if(DadosProf.conselho === ""){
           
           namedRange.getRange().setValue("NÃO SE APLICA")
@@ -197,7 +196,7 @@ function preencherPlanilha(DadosProf){
         }
 
         break;
-      case 'form_ufConselho':
+      case `form_ufConselho`:
         if(DadosProf.ufConselho === "" || DadosProf.ufConselho === "-"){
           
           namedRange.getRange().setValue("NÃO SE APLICA")
@@ -207,19 +206,16 @@ function preencherPlanilha(DadosProf){
         }
 
         break;
-      case 'form_inicioContrato':
+      case `form_inicioContrato`:
         namedRange.getRange().setValue(DadosProf.dataAdmissao)
         break;
-      case 'form_regional1':
+      case `form_regional1`:
         namedRange.getRange().setValue(DadosProf.regional1)
         break;
-      case 'form_lotacao1':
+      case `form_lotacao1`:
         namedRange.getRange().setValue(DadosProf.lotacao1)
-        break;
-      case 'form_ultDia':
-        namedRange.getRange().setValue(DadosProf.ultimoDia)
-        break;    
-      case 'form_bv':
+        break;  
+      case `form_bv`:
         if(DadosProf.reciboBV === ""){
           namedRange.getRange().setValue("ENVIO MANUAL")
         }else{
@@ -228,37 +224,66 @@ function preencherPlanilha(DadosProf){
         
         namedRange.getRange().setNumberFormat('000000')
         break;
-      case 'form_intProf':
-        if(DadosProf.iniciativaRecisao == 'Por interesse do profissional'){
+      case `form_intProf`:
+        if(DadosProf.iniciativaRecisao === 'Por interesse do profissional'){
           namedRange.getRange().setValue(true)
         }else{
           namedRange.getRange().setValue(false)
         }
         break;
-      case 'form_intSMSA':
-        if(DadosProf.iniciativaRecisao == 'Por interesse da SMSA'){
+      case `form_intSMSA`:
+        if(DadosProf.iniciativaRecisao === 'Por interesse da SMSA'){
           namedRange.getRange().setValue(true)
         }else{
           namedRange.getRange().setValue(false)
         }
         break;
-    
-     
+      case `form_avisoSIM`:
+        if(DadosProf.avisoPrevio === "Sim."){
+          namedRange.getRange().setValue(true)
+        }
+        else{
+          namedRange.getRange().setValue(false)
+        }
+        break;
+      case `form_avisoNAO`:
+        if(DadosProf.avisoPrevio === "Não."){
+          namedRange.getRange().setValue(true)
+        }
+        else{
+          namedRange.getRange().setValue(false)
+        }
+        break;
       default:
         namedRange.getRange().setValue("")
     }
   })
-  Logger.log("Termo preenchido")
+  
+  var celUltDia
+
+  if(aba === "formRecisao"){
+    celUltDia = "D31"
+    FORMULARIO.getRange(celUltDia).setValue(DadosProf.ultimoDia[0])
+  }else{
+    celUltDia = "D33"
+    const fimAviso = FORMULARIO.getRange("L36").getValue()
+    var ultDia = DadosProf.ultimoDia[1] || fimAviso
+    FORMULARIO.getRange(celUltDia).setValue(ultDia)
+  }
+
+  Logger.log("Formulário preenchido");
+
+  return FORMULARIO.getRange(celUltDia).getValue()
+
 }
 
-//OK
 function gerarPDF(nomeProfissional){
 
   Logger.log('Iniciando impressão em PDF')
 
   console.log(FORMULARIO.getRange('b16').getValue() + " Atraso necessário")
   
-  const fr = 0, fc = 0, lr = 67, lc = 12
+  const fr = 0, fc = 0, lr = 67, lc = 13
   const url = "https://docs.google.com/spreadsheets/d/" + ssId + "/export" +
     "?format=pdf&" +
     "size=7&" +
@@ -286,19 +311,30 @@ function gerarPDF(nomeProfissional){
   return pdf
 }
 
-//OK
-function excluirPDF(pdf) {
-  Logger.log('excluindo PDF')
-  folder.getFilesByName(pdf.getName()).next().setTrashed(true)
-  Logger.log("PDF excluído.")
+function getParentFolderByName_(folderName) {
+
+  // Gets the Drive Folder of where the current spreadsheet is located.
+  const ssId = SpreadsheetApp.getActiveSpreadsheet().getId();
+  const parentFolder = DriveApp.getFileById(ssId).getParents().next();
+
+  // Iterates the subfolders to check if the PDF folder already exists.
+  const subFolders = parentFolder.getFolders();
+  while (subFolders.hasNext()) {
+    let folder = subFolders.next();
+
+    // Returns the existing folder if found.
+    if (folder.getName() === folderName) {
+      return folder;
+    }
+  }
+  // Creates a new folder if one does not already exist.
+  return parentFolder.createFolder(folderName)
+    .setDescription(`Created by Eu mesmo: application to store PDF output files`);
 }
-
-var image = DriveApp.getFileById("1kOoCMcm57rZMwa71OgyeOalZpSddirrs").getAs("image/png");
-var emailImages = {"logo": image};
-
 
 function enviarEmail(detalhesEmail){
 
+  
 
   const CORPO_TEXTO_PROFISSIONAL = corpoTextoProfissional(detalhesEmail.nome, detalhesEmail.matricula, detalhesEmail.ultDia,detalhesEmail.confirmaBV, detalhesEmail.interesse, detalhesEmail.cienciaProfissional)
   const CORPO_TEXTO_GESTOR = corpoTextoGestor(detalhesEmail.nome, detalhesEmail.reciboBV, detalhesEmail.confirmaBV)
@@ -349,22 +385,50 @@ function enviarEmail(detalhesEmail){
   }
 }
 
-function enviarEmaildeErro(CPFeMatriculaErrados){
-  
-  //protegendo o cpf pegando os 3 digitos do meio
-  var cpf3 = CPFeMatriculaErrados.cpfEnv.toString()
-  cpf3 = cpf3[3] + cpf3[4] + cpf3[5]
+function enviarEmaildeErro(DadosADMP, emailGestor, msg,codErr){
 
   //email html
-  var corpoHtml = '<html> <head> <meta charset="UTF-8"> </head><style> body{ font-family:Verdana, Geneva, Tahoma, sans-serif; } </style> <body><p>' +
-  saudacao() + '.<br><br>' +
+  var corpoHtml
 
-  "O Termo de rescisão não pôde ser gerado pois a Mat.: " + CPFeMatriculaErrados.matrEnviada + " e o CPF: ***." + cpf3 + ".***-** não correspondem ao mesmo contrato. Favor realizar outra submissão do formulário com dados corretos.<br><br>" +
-  'Caso esta mensagem não faça sentido para você, gentileza desconsiderá-la.<br><br>' + 'Atenciosamente,<br><br></p>' + assinatura
+  if(codErr === "erro1"){
+    //protegendo o cpf pegando os 3 digitos do meio
+    var cpf3 = DadosADMP.cpfEnviado.toString()
+    cpf3 = cpf3[3] + cpf3[4] + cpf3[5]
+
+    corpoHtml = '<html> <head> <meta charset="UTF-8"> </head><style> body{ font-family:Verdana, Geneva, Tahoma, sans-serif; } </style> <body><p>' +
+    saudacao() + '.<br><br>' +
+
+    "O Termo de rescisão não pôde ser gerado pois a Mat.: " + DadosADMP.matriculaEnviada + " e o CPF: ***." + cpf3 + ".***-** não correspondem ao mesmo contrato. Favor realizar outra submissão do formulário com dados corretos.<br><br>" +
+    'Caso esta mensagem não faça sentido para você, gentileza desconsiderá-la.<br><br>' + 'Atenciosamente,<br><br></p>' + assinatura
+  }
+
+  if(codErr === "erro2"){
+
+    //email html
+    var corpoHtml = '<html> <head> <meta charset="UTF-8"> </head><style> body{ font-family:Verdana, Geneva, Tahoma, sans-serif; } </style> <body><p>' +
+    saudacao() + '.<br><br>' +
+
+    "O Termo de rescisão não pôde ser gerado pois os e-mails informados como o do gestor e o do profissional são iguais. Favor realizar outra submissão do formulário com dados corretos.<br><br>" +
+    'Caso esta mensagem não faça sentido para você, gentileza desconsiderá-la.<br><br>' + 'Atenciosamente,<br><br></p>' + assinatura
+  }
+
+  if(codErr === "erro3"){
+    //protegendo o cpf pegando os 3 digitos do meio
+    cpf3 = DadosADMP[1].toString()
+    cpf3 = cpf3[3] + cpf3[4] + cpf3[5]
+
+    const matriculaEnviada = DadosADMP[3].toString()
+
+    corpoHtml = '<html> <head> <meta charset="UTF-8"> </head><style> body{ font-family:Verdana, Geneva, Tahoma, sans-serif; } </style> <body><p>' +
+    saudacao() + '.<br><br>' +
+
+    "O Termo de rescisão não pôde ser gerado para o profissional de Mat.: " + matriculaEnviada + " e CPF: ***." + cpf3 + ".***-**, pois " + msg +
+    '<br><br>Caso esta mensagem não faça sentido para você, gentileza desconsiderá-la.<br><br>' + 'Atenciosamente,<br><br></p>' + assinatura
+  }
 
   GmailApp.sendEmail(
       //destinatários
-      CPFeMatriculaErrados.emailGestor,
+      emailGestor,
       //título
       'DIEP | GGCAT | Rescisão CADM | ERRO NA EMISSÃO DO TERMO DE RESCISÃO',
       //corpo do email
@@ -378,7 +442,7 @@ function enviarEmaildeErro(CPFeMatriculaErrados){
     )
 }
 
-function enviarEmaildeErroEmail(CPFeMatriculaErrados){
+/*function enviarEmaildeErroEmail(CPFeMatriculaErrados){
   
   //protegendo o cpf pegando os 3 digitos do meio
   var cpf3 = CPFeMatriculaErrados.cpfEnv.toString()
@@ -405,16 +469,17 @@ function enviarEmaildeErroEmail(CPFeMatriculaErrados){
         inlineImages: emailImages
       }
     )
-}
+}*/
 
-
-
-function envioManutencao(Profissional, Respostas){
-
+function envioManutencao(DadosProfissional,ultDia, Respostas){
+  let ultimoDia = DadosProfissional.ultimoDia[0] || DadosProfissional.ultimoDia[1] || ultDia
 
   const valores = [
-    [Respostas["Carimbo de data/hora"], Respostas["E-MAIL DO GESTOR"], Respostas["INICIATIVA DA RESCISÃO"], Respostas["MOTIVOS DA RESCISÃO"], Profissional.emailProfissional, Profissional.matricula, Profissional.cpf, Profissional.ultimoDia, Profissional.reciboBV, Profissional.matricula, Profissional.nome, Profissional.lotacao1, Profissional.regional1, Profissional.categoria, Profissional.dataAdmissao]
+    [Respostas["Carimbo de data/hora"], DadosProfissional.emailGestor, Respostas["INICIATIVA DA RESCISÃO"], Respostas["MOTIVOS DA RESCISÃO"], DadosProfissional.emailProfissional, DadosProfissional.matricula, DadosProfissional.cpf, ultimoDia, DadosProfissional.reciboBV, DadosProfissional.matricula, DadosProfissional.nome, DadosProfissional.lotacao1, DadosProfissional.regional1, DadosProfissional.categoria, DadosProfissional.dataAdmissao]
   ]
+
+  console.log("Valores a serem enviados para a planilha da manutenção")
+  console.log(valores)
 
 
   //ENVIO PRA MANUTANCAO
@@ -438,99 +503,36 @@ function envioManutencao(Profissional, Respostas){
   Logger.log("Enviado para planilha de rescisões: " + valores)
 }
 
+function envioUnidades(DadosProfissional, ultDia, Respostas){
 
-
-
-function envioUnidades(Profissional, Respostas){
+  let ultimoDia = DadosProfissional.ultimoDia[0] || DadosProfissional.ultimoDia[1] || ultDia
   
   const valores = [
-    [Profissional.matricula, Profissional.cpf, Profissional.nome, Profissional.lotacao1, Profissional.regional1, Profissional.categoria, Profissional.dataAdmissao, Profissional.ultimoDia, Profissional.reciboBV, Respostas["Carimbo de data/hora"], Respostas["E-MAIL DO GESTOR"], Profissional.emailProfissional, Respostas["INICIATIVA DA RESCISÃO"], Respostas["MOTIVOS DA RESCISÃO"]]
+    [DadosProfissional.matricula, DadosProfissional.cpf, DadosProfissional.nome, DadosProfissional.lotacao1, DadosProfissional.regional1, DadosProfissional.categoria, DadosProfissional.dataAdmissao, ultimoDia, DadosProfissional.reciboBV, Respostas["Carimbo de data/hora"], DadosProfissional.emailGestor, DadosProfissional.emailProfissional, Respostas["INICIATIVA DA RESCISÃO"], Respostas["MOTIVOS DA RESCISÃO"]]
   ]
 
-  var colunaB = ""
-  var ultimaLinha = "" 
+  const arquivos = respostasUnidade.getFiles()
 
-  switch(Profissional.regional1){
-    
-    case "BARREIRO":
-      
-      colunaB = SHEETS_BARREIRO.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_BARREIRO.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional BARREIRO")
-      break;
+  while(arquivos.hasNext()){
+    const arquivo = arquivos.next()
+    const nome_arquivo = arquivo.getName()
+    const arquivo_regional = nome_arquivo.split("-")[1].trim()
+    if(arquivo_regional === DadosProfissional.regional1){
+      const arquivo_id = arquivo.getId()
+      const plan = SpreadsheetApp.openById(arquivo_id)
+      const aba_monitoramento = plan.getSheetByName("Monitoramento de Rescisões - " + arquivo_regional)
 
-    case "CENTRO SUL":
-      
-      colunaB = SHEETS_CENTRO_SUL.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_CENTRO_SUL.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional CENTRO SUL")
-      break;
-
-    case "LESTE":
-      
-      colunaB = SHEETS_LESTE.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_LESTE.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional LESTE")
-      break;
-
-    case "NORTE":
-      
-      colunaB = SHEETS_NORTE.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_NORTE.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional NORTE")
-      break;
-
-    case "NÍVEL CENTRAL":
-      
-      colunaB = SHEETS_NIVEL_CENTRAL.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_NIVEL_CENTRAL.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional CENTRO SUL")
-      break;
-
-    case "NORDESTE":
-      
-      colunaB = SHEETS_NORDESTE.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_NORDESTE.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional NORDESTE")
-      break;
-    
-    case "NOROESTE":
-      
-      colunaB = SHEETS_NOROESTE.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_NOROESTE.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional NOROESTE")
-      break;
-    
-    case "VENDA NOVA":
-      
-      colunaB = SHEETS_VENDA_NOVA.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_VENDA_NOVA.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional VENDA NOVA")
-      break;
-
-    case "PAMPULHA":
-      
-      colunaB = SHEETS_PAMPULHA.getRange("B3:B").getValues()
-      ultimaLinha = descobrirUltimaLinha(colunaB)
-      SHEETS_PAMPULHA.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
-      Logger.log("Enviado à regional PAMPULHA")
-      break;
-
-    default:
-      Logger.log("Nenhuma regional endereçada.")
-      break;
+      const colunaB = aba_monitoramento.getRange("B3:B").getValues()
+      const ultimaLinha = descobrirUltimaLinha(colunaB)
+      aba_monitoramento.getRange(ultimaLinha + 1, 2, 1, 14).setValues(valores)
+      Logger.log("Enviado à regional " + arquivo_regional)
+    }
   }
 
-  Logger.log("Valores enviados: " + valores)
+  
 }
+
+
   
 function descobrirUltimaLinha(arrayValores){
 
@@ -547,4 +549,9 @@ function descobrirUltimaLinha(arrayValores){
   }
   return linha
 }  
-  
+/*
+function dataLei(){
+  const data = new Date(2022,6,1)
+  console.log(data)
+}
+*/
